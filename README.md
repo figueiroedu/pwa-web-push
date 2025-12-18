@@ -4,7 +4,6 @@ This repository originated as a **proof of concept (POC)** for adding Progressiv
 
 The goal was to validate the technical feasibility of implementing:
 
-- **PWA installation** (Add to Home Screen) across different platforms
 - **Web Push Notifications** using the VAPID protocol
 - A backend service to manage push subscriptions and dispatch notifications
 
