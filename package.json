@@ -1,0 +1,39 @@
+{
+  "name": "pwa-web-push",
+  "version": "1.0.0",
+  "description": "Backend server for managing Web Push subscriptions and dispatching push notifications using VAPID protocol",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/index.js",
+    "lint": "eslint . --max-warnings=0",
+    "format": "prettier --check .",
+    "format\\:write": "prettier --write ."
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "engines": {
+    "node": ">=22 <23"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.36.0",
+    "@types/node": "^24.5.2",
+    "eslint": "^9.36.0",
+    "eslint-config-prettier": "^10.1.8",
+    "prettier": "^3.6.2",
+    "tsx": "^4.20.5",
+    "typescript": "^5.9.2",
+    "typescript-eslint": "^8.44.0"
+  },
+  "dependencies": {
+    "@fastify/cors": "^11.1.0",
+    "dotenv": "^16.4.5",
+    "fastify": "^5.6.0",
+    "pino": "^9.11.0",
+    "pino-pretty": "^13.1.1"
+  }
+}
