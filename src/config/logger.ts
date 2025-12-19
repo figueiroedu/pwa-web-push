@@ -17,7 +17,5 @@ const loggerOptions: LoggerOptions = isProduction
       },
     };
 
-export const createLogger = () => pino(loggerOptions);
+export const logger = pino(loggerOptions);
 export const fastifyLogger = loggerOptions;
-
-
