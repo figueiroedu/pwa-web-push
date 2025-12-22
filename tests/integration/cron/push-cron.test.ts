@@ -26,13 +26,6 @@ vi.mock('../../../src/config/logger', () => ({
   },
 }));
 
-vi.mock('../../../src/config/database', async () => {
-  const { getTestDb } = await import('../../helpers/test-db');
-  return {
-    getDatabase: () => getTestDb(),
-  };
-});
-
 describe('Push Cron', () => {
   beforeAll(async () => {
     await setupTestDb();
@@ -45,11 +38,16 @@ describe('Push Cron', () => {
   beforeEach(async () => {
     await clearTestDb();
     vi.clearAllMocks();
-    vi.resetModules();
   });
 
   describe('startPushCron', () => {
     it('should schedule cron to run every 5 minutes', async () => {
+      vi.resetModules();
+
+      vi.doMock('../../../src/config/database', () => ({
+        getDatabase: () => getTestDb(),
+      }));
+
       const { startPushCron } = await import('../../../src/cron/push-cron');
 
       startPushCron();
@@ -62,6 +60,12 @@ describe('Push Cron', () => {
     let cronCallback: () => Promise<void>;
 
     beforeEach(async () => {
+      vi.resetModules();
+
+      vi.doMock('../../../src/config/database', () => ({
+        getDatabase: () => getTestDb(),
+      }));
+
       mockSchedule.mockImplementation((_pattern: string, callback: () => Promise<void>) => {
         cronCallback = callback;
       });
@@ -174,13 +178,13 @@ describe('Push Cron', () => {
     });
 
     it('should log error when exception occurs', async () => {
+      vi.resetModules();
+
       vi.doMock('../../../src/config/database', () => ({
         getDatabase: () => {
           throw new Error('Database connection failed');
         },
       }));
-
-      vi.resetModules();
 
       mockSchedule.mockImplementation((_pattern: string, callback: () => Promise<void>) => {
         cronCallback = callback;
