@@ -5,7 +5,7 @@ describe('Logger', () => {
     vi.resetModules();
   });
 
-  it('deve exportar instância de pino logger com métodos básicos', async () => {
+  it('should export pino logger instance with basic methods', async () => {
     const { logger } = await import('../../../src/config/logger');
 
     expect(logger).toBeDefined();
@@ -15,11 +15,10 @@ describe('Logger', () => {
     expect(typeof logger.warn).toBe('function');
   });
 
-  it('deve exportar fastifyLogger como objeto de configuração', async () => {
+  it('should export fastifyLogger as configuration object', async () => {
     const { fastifyLogger } = await import('../../../src/config/logger');
 
     expect(fastifyLogger).toBeDefined();
     expect(typeof fastifyLogger).toBe('object');
   });
 });
-
