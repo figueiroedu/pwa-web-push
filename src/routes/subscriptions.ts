@@ -40,6 +40,15 @@ export const subscriptionRoutes = (app: FastifyInstance) => {
     });
   });
 
+  app.get('/subscriptions', async (_request, reply) => {
+    const db = getDatabase();
+    const collection = db.collection<Subscription>(COLLECTION_NAME);
+
+    const subscriptions = await collection.find({}).toArray();
+
+    return reply.send(subscriptions);
+  });
+
   app.get<{ Params: { id: string } }>('/subscriptions/:id', async (request, reply) => {
     const { id } = request.params;
 
