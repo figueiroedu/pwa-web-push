@@ -4,7 +4,9 @@
   "description": "Backend server for managing Web Push subscriptions and dispatching push notifications using VAPID protocol",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
     "dev": "npm run docker:up && tsx watch src/index.ts",
     "build": "tsc -p tsconfig.json",
     "start": "node dist/index.js",
@@ -26,12 +28,15 @@
     "@types/node": "^24.5.2",
     "@types/node-cron": "^3.0.11",
     "@types/web-push": "^3.6.4",
+    "@vitest/coverage-v8": "^4.0.16",
     "eslint": "^9.36.0",
     "eslint-config-prettier": "^10.1.8",
+    "mongodb-memory-server": "^11.0.0",
     "prettier": "^3.6.2",
     "tsx": "^4.20.5",
     "typescript": "^5.9.2",
-    "typescript-eslint": "^8.44.0"
+    "typescript-eslint": "^8.44.0",
+    "vitest": "^4.0.16"
   },
   "dependencies": {
     "@fastify/cors": "^11.1.0",
