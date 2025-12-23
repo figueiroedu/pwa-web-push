@@ -197,7 +197,7 @@ describe('Send Push Routes', () => {
       expect(body.details).toBe('Server error');
     });
 
-    it('should pass optional icon and url to service', async () => {
+    it('should pass optional icon and data.url to service', async () => {
       mockSendPushNotification.mockResolvedValueOnce({ success: true });
 
       const db = getTestDb();
@@ -214,7 +214,7 @@ describe('Send Push Routes', () => {
           title: 'Test Title',
           body: 'Test Body',
           icon: '/custom-icon.png',
-          url: '/custom-url',
+          data: { url: '/custom-url' },
         },
       });
 
