@@ -5,11 +5,11 @@ import { setupTestDb, teardownTestDb, getTestDb, clearTestDb } from '../../helpe
 import { validSubscriptionData, generateUniqueEndpoint } from '../../helpers/test-fixtures';
 import { SubscriptionRepository } from '../../../src/repositories/subscription.repository';
 import { SubscriptionService } from '../../../src/services/subscription.service';
-import { sendPushRoutes } from '../../../src/routes/send-push';
+import { sendPushRoutes } from '../../../src/routes/send-push.route';
 
 const mockSendPushNotification = vi.fn();
 
-vi.mock('../../../src/services/push-notification', () => ({
+vi.mock('../../../src/services/push-notification.service', () => ({
   sendPushNotification: (...args: unknown[]) => mockSendPushNotification(...args),
 }));
 
