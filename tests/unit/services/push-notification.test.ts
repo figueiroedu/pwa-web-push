@@ -34,7 +34,7 @@ describe('Push Notification Service', () => {
       vi.stubEnv('VAPID_PUBLIC_KEY', '');
       vi.stubEnv('VAPID_PRIVATE_KEY', 'private-key');
 
-      const { initializeWebPush } = await import('../../../src/services/push-notification');
+      const { initializeWebPush } = await import('../../../src/services/push-notification.service');
 
       expect(() => initializeWebPush()).toThrow(
         'VAPID_PUBLIC_KEY and VAPID_PRIVATE_KEY must be defined'
@@ -45,7 +45,7 @@ describe('Push Notification Service', () => {
       vi.stubEnv('VAPID_PUBLIC_KEY', 'public-key');
       vi.stubEnv('VAPID_PRIVATE_KEY', '');
 
-      const { initializeWebPush } = await import('../../../src/services/push-notification');
+      const { initializeWebPush } = await import('../../../src/services/push-notification.service');
 
       expect(() => initializeWebPush()).toThrow(
         'VAPID_PUBLIC_KEY and VAPID_PRIVATE_KEY must be defined'
@@ -57,7 +57,7 @@ describe('Push Notification Service', () => {
       vi.stubEnv('VAPID_PRIVATE_KEY', 'test-private-key');
       vi.stubEnv('VAPID_SUBJECT', 'mailto:test@example.com');
 
-      const { initializeWebPush } = await import('../../../src/services/push-notification');
+      const { initializeWebPush } = await import('../../../src/services/push-notification.service');
       initializeWebPush();
 
       expect(mockSetVapidDetails).toHaveBeenCalledWith(
@@ -72,7 +72,7 @@ describe('Push Notification Service', () => {
     it('should send notification successfully', async () => {
       mockSendNotification.mockResolvedValueOnce({ statusCode: 201 });
 
-      const { sendPushNotification } = await import('../../../src/services/push-notification');
+      const { sendPushNotification } = await import('../../../src/services/push-notification.service');
 
       const subscription = createMockSubscription();
       const result = await sendPushNotification(subscription, validPushPayload);
@@ -83,7 +83,7 @@ describe('Push Notification Service', () => {
     it('should format subscription correctly for web-push', async () => {
       mockSendNotification.mockResolvedValueOnce({ statusCode: 201 });
 
-      const { sendPushNotification } = await import('../../../src/services/push-notification');
+      const { sendPushNotification } = await import('../../../src/services/push-notification.service');
 
       const subscription = createMockSubscription();
       await sendPushNotification(subscription, validPushPayload);
@@ -103,7 +103,7 @@ describe('Push Notification Service', () => {
     it('should send payload as JSON stringified', async () => {
       mockSendNotification.mockResolvedValueOnce({ statusCode: 201 });
 
-      const { sendPushNotification } = await import('../../../src/services/push-notification');
+      const { sendPushNotification } = await import('../../../src/services/push-notification.service');
 
       const subscription = createMockSubscription();
       await sendPushNotification(subscription, validPushPayload);
@@ -120,7 +120,7 @@ describe('Push Notification Service', () => {
         message: 'Gone',
       });
 
-      const { sendPushNotification } = await import('../../../src/services/push-notification');
+      const { sendPushNotification } = await import('../../../src/services/push-notification.service');
 
       const subscription = createMockSubscription();
       const result = await sendPushNotification(subscription, validPushPayload);
@@ -137,7 +137,7 @@ describe('Push Notification Service', () => {
         statusCode: 500,
       });
 
-      const { sendPushNotification } = await import('../../../src/services/push-notification');
+      const { sendPushNotification } = await import('../../../src/services/push-notification.service');
 
       const subscription = createMockSubscription();
       const result = await sendPushNotification(subscription, validPushPayload);
@@ -152,7 +152,7 @@ describe('Push Notification Service', () => {
     it('should accept payload with optional fields (icon, data.url)', async () => {
       mockSendNotification.mockResolvedValueOnce({ statusCode: 201 });
 
-      const { sendPushNotification } = await import('../../../src/services/push-notification');
+      const { sendPushNotification } = await import('../../../src/services/push-notification.service');
 
       const subscription = createMockSubscription();
       const payloadWithOptionals = {
