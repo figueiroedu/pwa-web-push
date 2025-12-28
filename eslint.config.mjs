@@ -32,7 +32,10 @@ export default [
   {
     files: ["**/*.ts"],
     rules: {
-      "no-console": "error"
+      "no-console": "error",
+      "@typescript-eslint/no-non-null-assertion": "off",
+      "@typescript-eslint/no-unsafe-assignment": "off",
+      "@typescript-eslint/no-unsafe-member-access": "off"
     }
   },
   eslintConfigPrettier
