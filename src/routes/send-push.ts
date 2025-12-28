@@ -10,7 +10,9 @@ interface SendPushBody {
   title: string;
   body: string;
   icon?: string;
-  url?: string;
+  data?: {
+    url?: string;
+  };
 }
 
 export const sendPushRoutes = (app: FastifyInstance) => {
@@ -18,7 +20,7 @@ export const sendPushRoutes = (app: FastifyInstance) => {
     '/send-push/:subscription_id',
     async (request, reply) => {
       const { subscription_id } = request.params;
-      const { title, body, icon, url } = request.body;
+      const { title, body, icon, data } = request.body;
 
       if (!title || !body) {
         return reply.status(400).send({
@@ -43,7 +45,7 @@ export const sendPushRoutes = (app: FastifyInstance) => {
         title,
         body,
         icon,
-        data: { url },
+        data,
       });
 
       if (!result.success) {
