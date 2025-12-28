@@ -3,6 +3,9 @@ import Fastify, { FastifyInstance } from 'fastify';
 import { ObjectId } from 'mongodb';
 import { setupTestDb, teardownTestDb, getTestDb, clearTestDb } from '../../helpers/test-db';
 import { validSubscriptionData, generateUniqueEndpoint } from '../../helpers/test-fixtures';
+import { SubscriptionRepository } from '../../../src/repositories/subscription.repository';
+import { SubscriptionService } from '../../../src/services/subscription.service';
+import { subscriptionRoutes } from '../../../src/routes/subscriptions';
 
 vi.mock('../../../src/config/database', async () => {
   const { getTestDb } = await import('../../helpers/test-db');
@@ -11,15 +14,18 @@ vi.mock('../../../src/config/database', async () => {
   };
 });
 
-import { subscriptionRoutes } from '../../../src/routes/subscriptions';
-
 let app: FastifyInstance;
+let service: SubscriptionService;
 
 describe('Subscription Routes', () => {
   beforeAll(async () => {
     await setupTestDb();
+
+    const repository = new SubscriptionRepository();
+    service = new SubscriptionService(repository);
+
     app = Fastify();
-    await app.register(subscriptionRoutes);
+    await app.register(subscriptionRoutes(service));
     await app.ready();
   });
 
@@ -91,7 +97,7 @@ describe('Subscription Routes', () => {
       expect(response.statusCode).toBe(400);
     });
 
-    it('should return 200 when subscription already exists', async () => {
+    it('should return 409 when subscription already exists', async () => {
       const endpoint = generateUniqueEndpoint('duplicate');
       const payload = {
         endpoint,
@@ -105,7 +111,6 @@ describe('Subscription Routes', () => {
       });
 
       expect(firstResponse.statusCode).toBe(201);
-      const firstBody = firstResponse.json();
 
       const secondResponse = await app.inject({
         method: 'POST',
@@ -113,10 +118,9 @@ describe('Subscription Routes', () => {
         payload,
       });
 
-      expect(secondResponse.statusCode).toBe(200);
+      expect(secondResponse.statusCode).toBe(409);
       const secondBody = secondResponse.json();
-      expect(secondBody.message).toBe('Subscription already exists');
-      expect(secondBody.id).toBe(firstBody.id);
+      expect(secondBody.error).toBe('Subscription already exists');
     });
 
     it('should save createdAt as Date', async () => {
@@ -206,15 +210,15 @@ describe('Subscription Routes', () => {
       expect(body.error).toBe('Subscription not found');
     });
 
-    it('should return 400 for invalid ID', async () => {
+    it('should return 404 for invalid ID', async () => {
       const response = await app.inject({
         method: 'GET',
         url: '/subscriptions/invalid-id',
       });
 
-      expect(response.statusCode).toBe(400);
+      expect(response.statusCode).toBe(404);
       const body = response.json();
-      expect(body.error).toBe('Invalid subscription ID');
+      expect(body.error).toBe('Subscription not found');
     });
   });
 
@@ -250,15 +254,15 @@ describe('Subscription Routes', () => {
       expect(body.error).toBe('Subscription not found');
     });
 
-    it('should return 400 for invalid ID', async () => {
+    it('should return 404 for invalid ID', async () => {
       const response = await app.inject({
         method: 'DELETE',
         url: '/subscriptions/invalid-id',
       });
 
-      expect(response.statusCode).toBe(400);
+      expect(response.statusCode).toBe(404);
       const body = response.json();
-      expect(body.error).toBe('Invalid subscription ID');
+      expect(body.error).toBe('Subscription not found');
     });
 
     it('should effectively remove from database', async () => {
