@@ -1,29 +1,20 @@
 import cron from 'node-cron';
-import { getDatabase } from '../config/database';
-import { Subscription } from '../types/subscription';
-import { sendPushNotification } from '../services/push-notification';
+import { SubscriptionService } from '../services/subscription.service';
+import { sendPushNotification } from '../services/push-notification.service';
+import { PushPayload } from '../types/push-payload';
 import { logger } from '../config/logger';
 
-const COLLECTION_NAME = 'subscriptions';
-
-export const startPushCron = () => {
+export const startPushCron = (subscriptionService: SubscriptionService) => {
   cron.schedule('*/5 * * * *', async () => {
-    logger.info('Running push notification cron job');
-
     try {
-      const db = getDatabase();
-      const collection = db.collection<Subscription>(COLLECTION_NAME);
-
-      const subscriptions = await collection.find({}).toArray();
+      const subscriptions = await subscriptionService.getAll();
 
       if (subscriptions.length === 0) {
         logger.info('No subscriptions found, skipping push');
         return;
       }
 
-      logger.info(`Sending push to ${String(subscriptions.length)} subscription(s)`);
-
-      const payload = {
+      const payload: PushPayload = {
         title: 'PWA Web Push',
         body: `Notificação automática - ${new Date().toLocaleString('pt-BR')}`,
         icon: '/icon-192x192.png',
@@ -36,7 +27,7 @@ export const startPushCron = () => {
         const result = await sendPushNotification(subscription, payload);
 
         if (!result.success && result.statusCode === 410) {
-          await collection.deleteOne({ _id: subscription._id });
+          await subscriptionService.delete(subscription._id!.toString());
           logger.info({ subscriptionId: subscription._id }, 'Expired subscription removed');
         }
       }

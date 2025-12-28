@@ -3,9 +3,11 @@ import Fastify from 'fastify';
 import cors from '@fastify/cors';
 import { fastifyLogger } from './config/logger';
 import { connectDatabase, closeDatabase } from './config/database';
-import { initializeWebPush } from './services/push-notification';
-import { subscriptionRoutes } from './routes/subscriptions';
-import { sendPushRoutes } from './routes/send-push';
+import { initializeWebPush } from './services/push-notification.service';
+import { SubscriptionRepository } from './repositories/subscription.repository';
+import { SubscriptionService } from './services/subscription.service';
+import { subscriptionRoutes } from './routes/subscriptions.route';
+import { sendPushRoutes } from './routes/send-push.route';
 import { startPushCron } from './cron/push-cron';
 
 const PORT = Number(process.env.PORT) || 3000;
@@ -23,10 +25,13 @@ const start = async () => {
 
     initializeWebPush();
 
-    await app.register(subscriptionRoutes);
-    await app.register(sendPushRoutes);
+    const subscriptionRepository = new SubscriptionRepository();
+    const subscriptionService = new SubscriptionService(subscriptionRepository);
 
-    startPushCron();
+    await app.register(subscriptionRoutes(subscriptionService));
+    await app.register(sendPushRoutes(subscriptionService));
+
+    startPushCron(subscriptionService);
 
     await app.listen({ port: PORT, host: HOST });
     app.log.info(`Server listening on http://${HOST}:${String(PORT)}`);
