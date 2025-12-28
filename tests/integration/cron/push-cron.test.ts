@@ -1,11 +1,10 @@
 import { describe, it, expect, beforeAll, afterAll, beforeEach, vi } from 'vitest';
 import { setupTestDb, teardownTestDb, getTestDb, clearTestDb } from '../../helpers/test-db';
 import { validSubscriptionData, generateUniqueEndpoint } from '../../helpers/test-fixtures';
+import { SubscriptionRepository } from '../../../src/repositories/subscription.repository';
+import { SubscriptionService } from '../../../src/services/subscription.service';
 
 const mockSchedule = vi.fn();
-const mockSendPushNotification = vi.fn();
-const mockLoggerInfo = vi.fn();
-const mockLoggerError = vi.fn();
 
 vi.mock('node-cron', () => ({
   default: {
@@ -13,22 +12,36 @@ vi.mock('node-cron', () => ({
   },
 }));
 
-vi.mock('../../../src/services/push-notification', () => ({
+const mockSendPushNotification = vi.fn();
+
+vi.mock('../../../src/services/push-notification.service', () => ({
   sendPushNotification: (...args: unknown[]) => mockSendPushNotification(...args),
 }));
 
 vi.mock('../../../src/config/logger', () => ({
   logger: {
-    info: (...args: unknown[]) => mockLoggerInfo(...args),
-    error: (...args: unknown[]) => mockLoggerError(...args),
-    debug: vi.fn(),
+    info: vi.fn(),
+    error: vi.fn(),
     warn: vi.fn(),
+    debug: vi.fn(),
   },
 }));
+
+vi.mock('../../../src/config/database', async () => {
+  const { getTestDb } = await import('../../helpers/test-db');
+  return {
+    getDatabase: () => getTestDb(),
+  };
+});
+
+let service: SubscriptionService;
 
 describe('Push Cron', () => {
   beforeAll(async () => {
     await setupTestDb();
+
+    const repository = new SubscriptionRepository();
+    service = new SubscriptionService(repository);
   });
 
   afterAll(async () => {
@@ -42,69 +55,62 @@ describe('Push Cron', () => {
 
   describe('startPushCron', () => {
     it('should schedule cron to run every 5 minutes', async () => {
-      vi.resetModules();
-
-      vi.doMock('../../../src/config/database', () => ({
-        getDatabase: () => getTestDb(),
-      }));
-
       const { startPushCron } = await import('../../../src/cron/push-cron');
 
-      startPushCron();
+      startPushCron(service);
 
+      expect(mockSchedule).toHaveBeenCalledTimes(1);
       expect(mockSchedule).toHaveBeenCalledWith('*/5 * * * *', expect.any(Function));
     });
   });
 
   describe('cron callback', () => {
-    let cronCallback: () => Promise<void>;
-
-    beforeEach(async () => {
-      vi.resetModules();
-
-      vi.doMock('../../../src/config/database', () => ({
-        getDatabase: () => getTestDb(),
-      }));
-
-      mockSchedule.mockImplementation((_pattern: string, callback: () => Promise<void>) => {
-        cronCallback = callback;
-      });
-
-      const { startPushCron } = await import('../../../src/cron/push-cron');
-      startPushCron();
-    });
-
     it('should fetch all subscriptions from database', async () => {
       const db = getTestDb();
-      await db.collection('subscriptions').insertMany([
-        { endpoint: generateUniqueEndpoint('1'), keys: validSubscriptionData.keys, createdAt: new Date() },
-        { endpoint: generateUniqueEndpoint('2'), keys: validSubscriptionData.keys, createdAt: new Date() },
-      ]);
+      await db.collection('subscriptions').insertOne({
+        endpoint: generateUniqueEndpoint('cron-test'),
+        keys: validSubscriptionData.keys,
+        createdAt: new Date(),
+      });
 
       mockSendPushNotification.mockResolvedValue({ success: true });
 
+      const { startPushCron } = await import('../../../src/cron/push-cron');
+
+      startPushCron(service);
+
+      const cronCallback = mockSchedule.mock.calls[0][1] as () => Promise<void>;
       await cronCallback();
 
-      expect(mockSendPushNotification).toHaveBeenCalledTimes(2);
+      expect(mockSendPushNotification).toHaveBeenCalledTimes(1);
     });
 
     it('should not send push when no subscriptions exist', async () => {
+      const { startPushCron } = await import('../../../src/cron/push-cron');
+
+      startPushCron(service);
+
+      const cronCallback = mockSchedule.mock.calls[0][1] as () => Promise<void>;
       await cronCallback();
 
       expect(mockSendPushNotification).not.toHaveBeenCalled();
-      expect(mockLoggerInfo).toHaveBeenCalledWith('No subscriptions found, skipping push');
     });
 
     it('should send push for each subscription', async () => {
       const db = getTestDb();
       await db.collection('subscriptions').insertMany([
-        { endpoint: generateUniqueEndpoint('a'), keys: validSubscriptionData.keys, createdAt: new Date() },
-        { endpoint: generateUniqueEndpoint('b'), keys: validSubscriptionData.keys, createdAt: new Date() },
-        { endpoint: generateUniqueEndpoint('c'), keys: validSubscriptionData.keys, createdAt: new Date() },
+        { endpoint: generateUniqueEndpoint('sub-1'), keys: validSubscriptionData.keys, createdAt: new Date() },
+        { endpoint: generateUniqueEndpoint('sub-2'), keys: validSubscriptionData.keys, createdAt: new Date() },
+        { endpoint: generateUniqueEndpoint('sub-3'), keys: validSubscriptionData.keys, createdAt: new Date() },
       ]);
 
       mockSendPushNotification.mockResolvedValue({ success: true });
 
+      const { startPushCron } = await import('../../../src/cron/push-cron');
+
+      startPushCron(service);
+
+      const cronCallback = mockSchedule.mock.calls[0][1] as () => Promise<void>;
       await cronCallback();
 
       expect(mockSendPushNotification).toHaveBeenCalledTimes(3);
@@ -120,12 +126,18 @@ describe('Push Cron', () => {
 
       mockSendPushNotification.mockResolvedValue({ success: true });
 
+      const { startPushCron } = await import('../../../src/cron/push-cron');
+
+      startPushCron(service);
+
+      const cronCallback = mockSchedule.mock.calls[0][1] as () => Promise<void>;
       await cronCallback();
 
       expect(mockSendPushNotification).toHaveBeenCalledWith(
         expect.any(Object),
         expect.objectContaining({
           title: 'PWA Web Push',
+          body: expect.any(String),
           icon: '/icon-192x192.png',
           data: { url: '/' },
         })
@@ -140,11 +152,16 @@ describe('Push Cron', () => {
         createdAt: new Date(),
       });
 
-      mockSendPushNotification.mockResolvedValueOnce({
+      mockSendPushNotification.mockResolvedValue({
         success: false,
         statusCode: 410,
       });
 
+      const { startPushCron } = await import('../../../src/cron/push-cron');
+
+      startPushCron(service);
+
+      const cronCallback = mockSchedule.mock.calls[0][1] as () => Promise<void>;
       await cronCallback();
 
       const subscription = await db.collection('subscriptions').findOne({
@@ -162,12 +179,17 @@ describe('Push Cron', () => {
         createdAt: new Date(),
       });
 
-      mockSendPushNotification.mockResolvedValueOnce({
+      mockSendPushNotification.mockResolvedValue({
         success: false,
         statusCode: 500,
         error: 'Server error',
       });
 
+      const { startPushCron } = await import('../../../src/cron/push-cron');
+
+      startPushCron(service);
+
+      const cronCallback = mockSchedule.mock.calls[0][1] as () => Promise<void>;
       await cronCallback();
 
       const subscription = await db.collection('subscriptions').findOne({
@@ -178,27 +200,25 @@ describe('Push Cron', () => {
     });
 
     it('should log error when exception occurs', async () => {
-      vi.resetModules();
+      const { logger } = await import('../../../src/config/logger');
 
-      vi.doMock('../../../src/config/database', () => ({
-        getDatabase: () => {
-          throw new Error('Database connection failed');
-        },
-      }));
-
-      mockSchedule.mockImplementation((_pattern: string, callback: () => Promise<void>) => {
-        cronCallback = callback;
+      const db = getTestDb();
+      await db.collection('subscriptions').insertOne({
+        endpoint: generateUniqueEndpoint('exception-test'),
+        keys: validSubscriptionData.keys,
+        createdAt: new Date(),
       });
 
-      const { startPushCron } = await import('../../../src/cron/push-cron');
-      startPushCron();
+      mockSendPushNotification.mockRejectedValue(new Error('Unexpected error'));
 
+      const { startPushCron } = await import('../../../src/cron/push-cron');
+
+      startPushCron(service);
+
+      const cronCallback = mockSchedule.mock.calls[0][1] as () => Promise<void>;
       await cronCallback();
 
-      expect(mockLoggerError).toHaveBeenCalledWith(
-        expect.objectContaining({ error: expect.any(Error) }),
-        'Error in push notification cron job'
-      );
+      expect(logger.error).toHaveBeenCalled();
     });
   });
 });

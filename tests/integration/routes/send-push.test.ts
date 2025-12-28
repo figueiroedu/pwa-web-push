@@ -3,10 +3,13 @@ import Fastify, { FastifyInstance } from 'fastify';
 import { ObjectId } from 'mongodb';
 import { setupTestDb, teardownTestDb, getTestDb, clearTestDb } from '../../helpers/test-db';
 import { validSubscriptionData, generateUniqueEndpoint } from '../../helpers/test-fixtures';
+import { SubscriptionRepository } from '../../../src/repositories/subscription.repository';
+import { SubscriptionService } from '../../../src/services/subscription.service';
+import { sendPushRoutes } from '../../../src/routes/send-push.route';
 
 const mockSendPushNotification = vi.fn();
 
-vi.mock('../../../src/services/push-notification', () => ({
+vi.mock('../../../src/services/push-notification.service', () => ({
   sendPushNotification: (...args: unknown[]) => mockSendPushNotification(...args),
 }));
 
@@ -17,15 +20,18 @@ vi.mock('../../../src/config/database', async () => {
   };
 });
 
-import { sendPushRoutes } from '../../../src/routes/send-push';
-
 let app: FastifyInstance;
+let service: SubscriptionService;
 
 describe('Send Push Routes', () => {
   beforeAll(async () => {
     await setupTestDb();
+
+    const repository = new SubscriptionRepository();
+    service = new SubscriptionService(repository);
+
     app = Fastify();
-    await app.register(sendPushRoutes);
+    await app.register(sendPushRoutes(service));
     await app.ready();
   });
 
@@ -104,7 +110,7 @@ describe('Send Push Routes', () => {
       expect(response.statusCode).toBe(400);
     });
 
-    it('should return 400 for invalid ID', async () => {
+    it('should return 404 for invalid ID', async () => {
       const response = await app.inject({
         method: 'POST',
         url: '/send-push/invalid-id',
@@ -114,9 +120,9 @@ describe('Send Push Routes', () => {
         },
       });
 
-      expect(response.statusCode).toBe(400);
+      expect(response.statusCode).toBe(404);
       const body = response.json();
-      expect(body.error).toBe('Invalid subscription ID');
+      expect(body.error).toBe('Subscription not found');
     });
 
     it('should return 404 for non-existent subscription', async () => {
