@@ -5,7 +5,7 @@ import { setupTestDb, teardownTestDb, getTestDb, clearTestDb } from '../../helpe
 import { validSubscriptionData, generateUniqueEndpoint } from '../../helpers/test-fixtures';
 import { SubscriptionRepository } from '../../../src/repositories/subscription.repository';
 import { SubscriptionService } from '../../../src/services/subscription.service';
-import { subscriptionRoutes } from '../../../src/routes/subscriptions';
+import { subscriptionRoutes } from '../../../src/routes/subscriptions.route';
 
 vi.mock('../../../src/config/database', async () => {
   const { getTestDb } = await import('../../helpers/test-db');

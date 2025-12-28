@@ -14,7 +14,7 @@ vi.mock('node-cron', () => ({
 
 const mockSendPushNotification = vi.fn();
 
-vi.mock('../../../src/services/push-notification', () => ({
+vi.mock('../../../src/services/push-notification.service', () => ({
   sendPushNotification: (...args: unknown[]) => mockSendPushNotification(...args),
 }));
 
